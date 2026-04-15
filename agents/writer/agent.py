@@ -4,8 +4,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.tools import BaseTool
 
-from agents.base import AgentResponse, BaseAgent
-from agents.registry import AgentRegistry
+from agents.core import AgentRegistry, AgentResponse, BaseAgent
 from config.settings import Settings
 from services.models import WritingRequest, WritingState
 from services.prompt.manager import get_prompt_manager

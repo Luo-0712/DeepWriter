@@ -16,6 +16,11 @@ class LLMProvider(str, Enum):
     CUSTOM = "custom"
 
 
+class DatabaseProvider(str, Enum):
+    SQLITE = "sqlite"
+    POSTGRESQL = "postgresql"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -26,6 +31,15 @@ class Settings(BaseSettings):
 
     project_name: str = "DeepWriter"
     debug: bool = False
+
+    database_provider: DatabaseProvider = DatabaseProvider.SQLITE
+    database_url: Optional[str] = None
+
+    postgresql_host: str = "localhost"
+    postgresql_port: int = 5432
+    postgresql_user: str = "postgres"
+    postgresql_password: str = "123456"
+    postgresql_db: str = "deepwriter"
 
     llm_provider: LLMProvider = LLMProvider.ZHIPU
     llm_model_name: str = "glm-4.6v"
@@ -51,11 +65,18 @@ class Settings(BaseSettings):
     qwen_api_key: Optional[str] = None
     qwen_api_base: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-    rag_embedding_model: str = "text-embedding-3-small"
+    tavily_api_key: Optional[str] = "YOUR_TAVILY_API_KEY_HERE"
+
+    # RAG Configuration
+    rag_embedding_model: str = "text-embedding-v3"
+    rag_embedding_provider: str = "qwen"  # qwen, openai
+    rag_embedding_dim: int = 1024
     rag_vector_store: str = "chroma"
     rag_persist_directory: str = "./data/chroma"
-    rag_chunk_size: int = 1000
-    rag_chunk_overlap: int = 200
+    rag_kb_base_dir: str = "./data/knowledge_bases"
+    rag_chunk_size: int = 512
+    rag_chunk_overlap: int = 50
+    rag_top_k: int = 5
 
     agent_max_iterations: int = 10
     agent_verbose: bool = False
