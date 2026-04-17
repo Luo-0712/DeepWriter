@@ -3,6 +3,13 @@ from .core import AgentRegistry, AgentResponse, AgentState, BaseAgent
 
 # Agent 实现
 from .writer import WriterAgent
+from .specialized import (
+    CriticAgent,
+    DraftAgent,
+    EditorAgent,
+    PlannerAgent,
+    ResearcherAgent,
+)
 
 __all__ = [
     # 核心组件
@@ -12,4 +19,10 @@ __all__ = [
     "AgentResponse",
     # Agent 实现
     "WriterAgent",
+    # 专业化 Agent
+    "PlannerAgent",
+    "ResearcherAgent",
+    "DraftAgent",
+    "EditorAgent",
+    "CriticAgent",
 ]

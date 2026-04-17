@@ -1,0 +1,10 @@
+from services.session_service import get_session_service
+from services.message_service import get_message_service
+from services.document_service import get_document_service
+from services.writing_task_service import get_writing_task_service
+
+# 直接使用现有的服务工厂函数
+get_session_service = get_session_service
+get_message_service = get_message_service
+get_document_service = get_document_service
+get_task_service = get_writing_task_service
