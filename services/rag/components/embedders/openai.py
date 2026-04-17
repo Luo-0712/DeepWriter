@@ -57,8 +57,8 @@ class OpenAIEmbedder(BaseEmbedder):
 
             # Try to load API key from settings
             try:
-                from config.settings import get_settings
-                settings = get_settings()
+                from config.settings import Settings
+                settings = Settings()  # 每次都创建新实例，避免缓存问题
 
                 if provider == "qwen":
                     config.api_key = settings.qwen_api_key or ""
@@ -93,7 +93,7 @@ class OpenAIEmbedder(BaseEmbedder):
         Args:
             texts: List of texts to embed
             **kwargs: Additional options
-                - batch_size: Number of texts per batch (default: 25)
+                - batch_size: Number of texts per batch (default: 10 for qwen, 25 for openai)
 
         Returns:
             List of embedding vectors
@@ -101,7 +101,9 @@ class OpenAIEmbedder(BaseEmbedder):
         if not texts:
             return []
 
-        batch_size = kwargs.get("batch_size", 25)
+        # Qwen API has batch size limit of 10
+        default_batch_size = 10 if self.config.provider == "qwen" else 25
+        batch_size = kwargs.get("batch_size", default_batch_size)
         all_embeddings = []
 
         total_batches = (len(texts) + batch_size - 1) // batch_size

@@ -36,14 +36,30 @@ class VectorIndexer(BaseIndexer):
         if self._chroma_client is None:
             try:
                 import chromadb
-                from chromadb.config import Settings
+                from chromadb.config import Settings as ChromaSettings
 
-                persist_dir = os.path.join(self.kb_base_dir, "chroma")
+                # 使用配置中的持久化目录
+                try:
+                    from config.settings import Settings
+                    settings = Settings()  # 每次都创建新实例，避免缓存问题
+                    persist_dir = settings.rag_persist_directory
+                except Exception:
+                    # 回退到默认路径
+                    persist_dir = os.path.join(self.kb_base_dir, "chroma")
+
+                # 确保路径是绝对路径
+                if not os.path.isabs(persist_dir):
+                    from pathlib import Path
+                    project_root = Path(__file__).resolve().parent.parent.parent.parent.parent
+                    persist_dir = os.path.join(str(project_root), persist_dir)
+
                 os.makedirs(persist_dir, exist_ok=True)
+                print(f"[ChromaDB] 使用持久化目录: {persist_dir}")
 
-                self._chroma_client = chromadb.Client(
-                    Settings(
-                        persist_directory=persist_dir,
+                # 使用 PersistentClient 进行持久化存储
+                self._chroma_client = chromadb.PersistentClient(
+                    path=persist_dir,
+                    settings=ChromaSettings(
                         anonymized_telemetry=False,
                     )
                 )

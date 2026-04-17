@@ -41,13 +41,14 @@ class Settings(BaseSettings):
     postgresql_password: str = "123456"
     postgresql_db: str = "deepwriter"
 
-    llm_provider: LLMProvider = LLMProvider.ZHIPU
-    llm_model_name: str = "glm-4.6v"
+    llm_provider: LLMProvider = LLMProvider.QWEN
+    #llm_model_name: str = "glm-4.6v"
+    llm_model_name: str = "qwen3.6-plus"
     llm_temperature: float = 1.0
     llm_max_tokens: int = 65535
 
-    openai_api_key: Optional[str] = None
-    openai_api_base: Optional[str] = None
+    openai_api_key: Optional[str] = "sk-Cb8eVCKm43JfbNOjABIi9w"
+    openai_api_base: Optional[str] = "https://xplt.sdu.edu.cn:4000"
 
     anthropic_api_key: Optional[str] = None
 
@@ -61,14 +62,15 @@ class Settings(BaseSettings):
 
     zhipu_api_key: Optional[str] = "f95a2a9ed958478cbe07bf0e90c0a5c6.xnD1B95o5rWq1cT5"
     zhipu_api_base: str = "https://open.bigmodel.cn/api/paas/v4"
+    # zhipu_api_base: str = "https://xplt.sdu.edu.cn:4000"
 
-    qwen_api_key: Optional[str] = None
+    qwen_api_key: Optional[str] = "sk-6301269627534fc8984172bb65330076"
     qwen_api_base: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
-    tavily_api_key: Optional[str] = "YOUR_TAVILY_API_KEY_HERE"
+    tavily_api_key: Optional[str] = "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"
 
     # RAG Configuration
-    rag_embedding_model: str = "text-embedding-v3"
+    rag_embedding_model: str = "text-embedding-v1"
     rag_embedding_provider: str = "qwen"  # qwen, openai
     rag_embedding_dim: int = 1024
     rag_vector_store: str = "chroma"

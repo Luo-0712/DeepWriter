@@ -10,11 +10,15 @@ class LLMFactory:
     _instances: dict[str, BaseChatModel] = {}
 
     @classmethod
-    def create(cls, settings: Optional[Settings] = None) -> BaseChatModel:
-        settings = settings or get_settings()
+    def create(cls, settings: Optional[Settings] = None, force_new: bool = False) -> BaseChatModel:
+        if settings is None:
+            settings = Settings()
+        else:
+            settings = settings
+
         cache_key = f"{settings.llm_provider.value}:{settings.llm_model_name}"
 
-        if cache_key in cls._instances:
+        if not force_new and cache_key in cls._instances:
             return cls._instances[cache_key]
 
         llm = cls._create_llm(settings)
@@ -121,5 +125,5 @@ class LLMFactory:
         cls._instances.clear()
 
 
-def create_llm(settings: Optional[Settings] = None) -> BaseChatModel:
-    return LLMFactory.create(settings)
+def create_llm(settings: Optional[Settings] = None, force_new: bool = False) -> BaseChatModel:
+    return LLMFactory.create(settings, force_new)

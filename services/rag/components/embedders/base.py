@@ -22,6 +22,16 @@ class EmbeddingConfig:
     api_key: str
     provider: str = "openai"  # openai, qwen, etc.
 
+    def copy(self) -> "EmbeddingConfig":
+        """Create a copy of this config."""
+        return EmbeddingConfig(
+            model=self.model,
+            dim=self.dim,
+            base_url=self.base_url,
+            api_key=self.api_key,
+            provider=self.provider,
+        )
+
 
 class BaseEmbedder(BaseComponent):
     """
