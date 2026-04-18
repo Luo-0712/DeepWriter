@@ -9,6 +9,7 @@ from typing import Optional
 from db.database import Database, get_db
 from db.models import WritingTask as WritingTaskModel
 from db.repositories import WritingTaskRepository
+from services.agent_status_service import get_agent_status_service
 
 
 class WritingTaskService:
@@ -229,9 +230,53 @@ class WritingTaskService:
         )
         return self.task_repo.create(new_task)
 
-    def get_task_stats(self) -> dict:
+    async def execute_and_stream(self, task_id: str, request: dict) -> None:
+        """执行工作流并通过 SSE 推送状态
+
+        Args:
+            task_id: 任务 ID
+            request: 写作请求字典
         """
-        获取任务统计信息
+        self.start_task(task_id)
+        status_service = get_agent_status_service()
+
+        try:
+            from services.models import WritingRequest
+            from workflows.orchestrator import WritingOrchestrator
+
+            writing_request = WritingRequest.from_dict(request)
+            orchestrator = WritingOrchestrator(mode="standard")
+
+            async for update in orchestrator.execute_stream(writing_request):
+                await status_service.publish_progress(
+                    task_id=task_id,
+                    node=update.get("node", ""),
+                    stage=update.get("stage", ""),
+                    thoughts=update.get("thoughts", []),
+                    preview=update.get("preview", ""),
+                )
+
+                if update["stage"] in ["completed", "failed"]:
+                    if update["stage"] == "completed":
+                        final_content = update.get("update", {}).get("final_content", "")
+                        stage_history = update.get("update", {}).get("stage_history", [])
+                        await status_service.publish_complete(
+                            task_id=task_id,
+                            final_content=final_content,
+                            stage_history=stage_history,
+                        )
+                        self.complete_task(task_id, final_content)
+                    else:
+                        error = update.get("update", {}).get("error", "未知错误")
+                        await status_service.publish_error(task_id=task_id, error=error)
+                        self.fail_task(task_id, error)
+                    break
+        except Exception as e:
+            await status_service.publish_error(task_id=task_id, error=str(e))
+            self.fail_task(task_id, str(e))
+
+    def get_task_stats(self) -> dict:
+        """获取任务统计信息
 
         Returns:
             dict: 统计信息

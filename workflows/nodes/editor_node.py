@@ -46,6 +46,15 @@ async def editor_node(state: WritingWorkflowState) -> dict:
         if revised_content:
             updates["draft_content"] = revised_content
 
+        current_thoughts = state.get("thoughts", [])
+        current_thoughts.append({
+            "node": "edit",
+            "content": "正在审查草稿内容，优化语言表达和逻辑结构...",
+        })
+
+        updates["thoughts"] = current_thoughts
+        updates["current_thought"] = "编辑审查完成"
+
         logger.info("编辑审查完成")
         return updates
 

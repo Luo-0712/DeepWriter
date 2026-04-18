@@ -41,3 +41,14 @@ class WritingWorkflowState(TypedDict):
 
     # 最终输出
     final_content: str
+
+    # 思考过程
+    thoughts: list[dict[str, Any]]
+    current_thought: str
+
+    # 阶段历史
+    stage_history: list[dict[str, Any]]
+
+    # 中间产物预览
+    outline_preview: str
+    research_preview: str

@@ -1,9 +1,10 @@
 import uvicorn
 from api.main import app
+from utils.logging_config import setup_logging
 
 
 def main():
-    """启动 DeepWriter API 服务"""
+    setup_logging()
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 

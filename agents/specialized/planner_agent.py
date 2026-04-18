@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, AsyncGenerator, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -96,3 +96,38 @@ class PlannerAgent(BaseAgent):
                 except json.JSONDecodeError:
                     pass
             return {"raw_content": content}
+
+    async def astream_chat(
+        self, session_id: str, message: str, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """流式聊天方法
+
+        Args:
+            session_id: 会话 ID
+            message: 用户消息
+            **kwargs: 其他参数
+
+        Yields:
+            流式输出的文本片段
+        """
+        try:
+            template = self._load_prompt_template()
+            system_prompt = template.format(
+                topic=kwargs.get("topic", message),
+                audience=kwargs.get("audience", "通用读者"),
+                goal=kwargs.get("goal", "信息传达"),
+                tone=kwargs.get("tone", "专业"),
+                length=kwargs.get("length", "medium"),
+            )
+
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=f"请为以下主题创建文章大纲：{message}"),
+            ]
+
+            async for chunk in self.llm.astream(messages):
+                if hasattr(chunk, 'content') and chunk.content:
+                    yield chunk.content
+
+        except Exception as e:
+            yield f"[错误] 流式聊天失败: {str(e)}"

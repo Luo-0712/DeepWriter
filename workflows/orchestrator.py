@@ -4,6 +4,7 @@
 """
 
 import logging
+import time
 from typing import Any, AsyncGenerator, Optional
 
 from services.models import WritingRequest
@@ -66,6 +67,11 @@ class WritingOrchestrator:
             "should_continue": False,
             "error": "",
             "final_content": "",
+            "thoughts": [],
+            "current_thought": "正在初始化工作流...",
+            "stage_history": [],
+            "outline_preview": "",
+            "research_preview": "",
         }
 
     async def execute(
@@ -117,20 +123,29 @@ class WritingOrchestrator:
 
         try:
             async for event in self.graph.astream(initial_state):
-                # event 格式: {node_name: state_update}
                 for node_name, state_update in event.items():
                     logger.info(f"节点 {node_name} 执行完成")
                     yield {
+                        "event": "node_complete",
                         "node": node_name,
                         "stage": state_update.get("current_stage", ""),
+                        "thoughts": state_update.get("thoughts", []),
+                        "current_thought": state_update.get("current_thought", ""),
+                        "preview": state_update.get("outline_preview", "") or state_update.get("research_preview", ""),
                         "update": state_update,
+                        "timestamp": time.time(),
                     }
         except Exception as e:
             logger.error(f"流式工作流执行失败: {e}")
             yield {
+                "event": "error",
                 "node": "error",
                 "stage": "failed",
+                "thoughts": [],
+                "current_thought": f"执行失败: {str(e)}",
+                "preview": "",
                 "update": {"error": str(e), "current_stage": "failed"},
+                "timestamp": time.time(),
             }
 
     async def resume(self, checkpoint_id: str, **kwargs) -> WritingWorkflowState:

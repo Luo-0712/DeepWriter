@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, AsyncGenerator, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -74,3 +74,41 @@ class DraftAgent(BaseAgent):
         except Exception as e:
             logger.error(f"DraftAgent 执行失败: {e}")
             return AgentResponse(content="", success=False, error=str(e))
+
+    async def astream_chat(
+        self, session_id: str, message: str, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """流式聊天方法
+
+        Args:
+            session_id: 会话 ID
+            message: 用户消息
+            **kwargs: 其他参数
+
+        Yields:
+            流式输出的文本片段
+        """
+        try:
+            outline = kwargs.get("outline", {})
+            research_notes = kwargs.get("research_notes", {})
+            tone = kwargs.get("tone", "专业")
+
+            template = self._load_prompt_template()
+            system_prompt = template.format(style=self.style, tone=tone)
+
+            user_content = f"文章大纲：\n{json.dumps(outline, ensure_ascii=False, indent=2)}\n\n"
+            if research_notes:
+                user_content += f"研究笔记：\n{json.dumps(research_notes, ensure_ascii=False, indent=2)}\n\n"
+            user_content += "请根据以上大纲和研究资料，撰写完整的文章。"
+
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_content),
+            ]
+
+            async for chunk in self.llm.astream(messages):
+                if hasattr(chunk, 'content') and chunk.content:
+                    yield chunk.content
+
+        except Exception as e:
+            yield f"[错误] 流式聊天失败: {str(e)}"

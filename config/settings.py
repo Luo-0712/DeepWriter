@@ -41,9 +41,9 @@ class Settings(BaseSettings):
     postgresql_password: str = "123456"
     postgresql_db: str = "deepwriter"
 
-    llm_provider: LLMProvider = LLMProvider.QWEN
-    #llm_model_name: str = "glm-4.6v"
-    llm_model_name: str = "qwen3.6-plus"
+    llm_provider: LLMProvider = LLMProvider.ZHIPU
+    llm_model_name: str = "glm-5.1"
+    # llm_model_name: str = "qwen3.6-plus"
     llm_temperature: float = 1.0
     llm_max_tokens: int = 65535
 
@@ -60,9 +60,8 @@ class Settings(BaseSettings):
     deepseek_api_key: Optional[str] = None
     deepseek_api_base: str = "https://api.deepseek.com/v1"
 
-    zhipu_api_key: Optional[str] = "f95a2a9ed958478cbe07bf0e90c0a5c6.xnD1B95o5rWq1cT5"
+    zhipu_api_key: Optional[str] = "b2f632d3777d4547b2e9a79a578e19cd.GyeVuO1bqhj9IFZw"
     zhipu_api_base: str = "https://open.bigmodel.cn/api/paas/v4"
-    # zhipu_api_base: str = "https://xplt.sdu.edu.cn:4000"
 
     qwen_api_key: Optional[str] = "sk-6301269627534fc8984172bb65330076"
     qwen_api_base: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"

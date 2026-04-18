@@ -1,6 +1,7 @@
 """评审节点 - 调用 CriticAgent 评估文章质量"""
 
 import logging
+import time
 
 from workflows.state import WritingWorkflowState
 
@@ -47,18 +48,35 @@ async def critic_node(state: WritingWorkflowState) -> dict:
             f"passed={passed}, iteration={iteration_count}/{max_iterations}"
         )
 
+        current_thoughts = state.get("thoughts", [])
+        current_thoughts.append({
+            "node": "critic",
+            "content": f"正在评估文章质量，评分: {review.get('overall_score', 0)}",
+        })
+
+        stage_history = state.get("stage_history", [])
+        stage_history.append({
+            "stage": "reviewed",
+            "timestamp": time.time(),
+            "score": review.get("overall_score", 0),
+        })
+
         updates = {
             "review_feedback": review,
             "current_stage": "reviewed",
             "iteration_count": iteration_count,
             "should_continue": should_continue,
             "error": "",
+            "thoughts": current_thoughts,
+            "current_thought": f"评审完成，评分: {review.get('overall_score', 0)}",
+            "stage_history": stage_history,
         }
 
         # 如果评审通过，设置最终内容
         if not should_continue:
             updates["final_content"] = state.get("draft_content", "")
             updates["current_stage"] = "completed"
+            updates["current_thought"] = "工作流执行完成"
 
         return updates
 

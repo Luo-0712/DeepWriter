@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -92,6 +92,67 @@ class WriterAgent(BaseAgent):
                 success=False,
                 error=str(e),
             )
+
+    async def astream_chat(
+        self, session_id: str, message: str, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """流式聊天方法
+
+        使用 LLM 的流式 API 逐块输出内容。
+
+        Args:
+            session_id: 会话 ID
+            message: 用户消息
+            **kwargs: 其他参数
+
+        Yields:
+            流式输出的文本片段
+        """
+        try:
+            # 确保加载了正确的会话
+            if self.session_manager.current_session_id != session_id:
+                self.session_manager.load_session(session_id)
+
+            # 获取会话的聊天历史
+            chat_history = self.session_manager.get_message_history(limit=10)
+
+            # 构建消息列表
+            messages = [SystemMessage(content=self.get_system_prompt())]
+
+            # 添加历史消息
+            if chat_history:
+                for msg in chat_history:
+                    if msg.get("role") == "user":
+                        messages.append(HumanMessage(content=msg.get("content", "")))
+                    elif msg.get("role") == "assistant":
+                        messages.append(HumanMessage(content=msg.get("content", "")))
+
+            # 添加当前消息
+            messages.append(HumanMessage(content=message))
+
+            # 保存用户消息到会话
+            if self.session_manager.current_session:
+                self.session_manager.add_message("user", message)
+
+            # 使用流式 API 调用 LLM
+            full_content = ""
+            async for chunk in self.llm.astream(messages):
+                if hasattr(chunk, 'content') and chunk.content:
+                    full_content += chunk.content
+                    yield chunk.content
+
+            # 保存完整回复
+            if self.session_manager.current_session:
+                self.session_manager.add_message("assistant", full_content)
+
+            # 更新写作状态
+            if self._current_state:
+                self._current_state.add_draft_section(full_content)
+                self._current_state.set_final_text(full_content)
+                self.session_manager.save_session()
+
+        except Exception as e:
+            yield f"[错误] 流式聊天失败: {str(e)}"
 
     def get_current_state(self) -> Optional[WritingState]:
         """获取当前写作状态"""

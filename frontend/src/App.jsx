@@ -11,6 +11,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [loadedSessions, setLoadedSessions] = useState(new Set());
+  const [loadingSessionId, setLoadingSessionId] = useState(null);
   const activeSSESource = useRef(null);
   const currentSessionUuid = useRef(null);
 
@@ -20,6 +21,7 @@ function App() {
 
   useEffect(() => {
     if (activeSession && !loadedSessions.has(activeSession.id)) {
+      setLoadingSessionId(activeSession.id);
       loadMessages(activeSession.id);
     }
     currentSessionUuid.current = activeSession?.id || null;
@@ -64,59 +66,77 @@ function App() {
         content: item.content,
         timestamp: item.created_at,
       }));
-      setSessions(prev => prev.map(s => 
-        s.id === sessionId ? { ...s, messages } : s
-      ));
+      setSessions(prev => {
+        const updated = prev.map(s => 
+          s.id === sessionId ? { ...s, messages } : s
+        );
+        setActiveSession(updated.find(s => s.id === sessionId));
+        return updated;
+      });
       setLoadedSessions(prev => new Set([...prev, sessionId]));
     } catch (error) {
       console.error('加载消息失败:', error);
     } finally {
       setLoadingMessages(false);
+      setLoadingSessionId(null);
     }
   };
 
-  const handleSend = async (content) => {
-    if (!activeSession) return;
+  const handleSend = async (content, session) => {
+    const currentSession = session || activeSession;
+    if (!currentSession) return;
 
     const newMessage = { role: 'user', content, timestamp: new Date() };
     
-    setSessions(prev => prev.map(s => 
-      s.id === activeSession.id 
-        ? { ...s, messages: [...s.messages, newMessage] }
-        : s
-    ));
+    setSessions(prev => {
+      const updated = prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...s.messages, newMessage] }
+          : s
+      );
+      setActiveSession(updated.find(s => s.id === currentSession.id));
+      return updated;
+    });
     
     setIsLoading(true);
 
     let assistantContent = '';
     const assistantMessageId = Date.now();
     
-    setSessions(prev => prev.map(s => 
-      s.id === activeSession.id 
-        ? { ...s, messages: [...s.messages, { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date() }] }
-        : s
-    ));
+    setSessions(prev => {
+      const updated = prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...s.messages, { id: assistantMessageId, role: 'assistant', content: '', timestamp: new Date() }] }
+          : s
+      );
+      setActiveSession(updated.find(s => s.id === currentSession.id));
+      return updated;
+    });
 
     const eventSource = sendStreamMessage(
-      activeSession.id,
+      currentSession.id,
       content,
       (chunk) => {
         assistantContent += chunk;
-        setSessions(prev => prev.map(s => 
-          s.id === activeSession.id 
-            ? { 
-                ...s, 
-                messages: s.messages.map(m => 
-                  m.id === assistantMessageId 
-                    ? { ...m, content: assistantContent }
-                    : m
-                )
-              }
-            : s
-        ));
+        setSessions(prev => {
+          const updated = prev.map(s => 
+            s.id === currentSession.id 
+              ? { 
+                  ...s, 
+                  messages: s.messages.map(m => 
+                    m.id === assistantMessageId 
+                      ? { ...m, content: assistantContent }
+                      : m
+                  )
+                }
+              : s
+          );
+          setActiveSession(updated.find(s => s.id === currentSession.id));
+          return updated;
+        });
       },
       () => {
-        setLoadedSessions(prev => new Set([...prev, activeSession.id]));
+        setLoadedSessions(prev => new Set([...prev, currentSession.id]));
         setIsLoading(false);
         eventSource.close();
         activeSSESource.current = null;
@@ -124,11 +144,15 @@ function App() {
       (error) => {
         console.error('发送消息失败:', error);
         const errorMessage = { role: 'assistant', content: '抱歉，发生了错误。请稍后重试。', timestamp: new Date() };
-        setSessions(prev => prev.map(s => 
-          s.id === activeSession.id 
-            ? { ...s, messages: [...s.messages, errorMessage] }
-            : s
-        ));
+        setSessions(prev => {
+          const updated = prev.map(s => 
+            s.id === currentSession.id 
+              ? { ...s, messages: [...s.messages, errorMessage] }
+              : s
+          );
+          setActiveSession(updated.find(s => s.id === currentSession.id));
+          return updated;
+        });
         setIsLoading(false);
         eventSource.close();
         activeSSESource.current = null;
@@ -202,8 +226,23 @@ function App() {
     }
   };
 
-  const handleSuggestionClick = (text) => {
-    handleSend(text);
+  const handleSuggestionClick = async (text) => {
+    let currentSession = activeSession;
+    if (!currentSession) {
+      const data = await createSession();
+      currentSession = {
+        id: data.id,
+        title: data.title,
+        messages: [],
+        status: data.status,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+      };
+      setSessions(prev => [currentSession, ...prev]);
+      setActiveSession(currentSession);
+      currentSessionUuid.current = currentSession.id;
+    }
+    handleSend(text, currentSession);
   };
 
   if (loading) {
@@ -233,6 +272,7 @@ function App() {
           onSuggestionClick={handleSuggestionClick}
           isLoading={isLoading}
           loadingMessages={loadingMessages}
+          isSessionLoading={activeSession?.id === loadingSessionId}
         />
       </main>
     </div>

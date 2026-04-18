@@ -33,9 +33,18 @@ async def writer_node(state: WritingWorkflowState) -> dict:
             }
 
         logger.info(f"初稿生成完成，字数: {len(response.content)}")
+        
+        current_thoughts = state.get("thoughts", [])
+        current_thoughts.append({
+            "node": "write",
+            "content": "正在根据大纲生成文章初稿...",
+        })
+
         return {
             "draft_content": response.content,
             "current_stage": "drafted",
+            "thoughts": current_thoughts,
+            "current_thought": "初稿生成完成",
             "error": "",
         }
 

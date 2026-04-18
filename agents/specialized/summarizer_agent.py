@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import AsyncGenerator, Optional
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -65,3 +65,29 @@ class SummarizerAgent(BaseAgent):
                 success=False,
                 error=str(e),
             )
+
+    async def astream_chat(
+        self, session_id: str, message: str, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """流式聊天方法
+
+        Args:
+            session_id: 会话 ID
+            message: 用户消息
+            **kwargs: 其他参数
+
+        Yields:
+            流式输出的文本片段
+        """
+        try:
+            messages = [
+                SystemMessage(content=self.get_system_prompt()),
+                HumanMessage(content=message),
+            ]
+
+            async for chunk in self.llm.astream(messages):
+                if hasattr(chunk, 'content') and chunk.content:
+                    yield chunk.content
+
+        except Exception as e:
+            yield f"[错误] 流式聊天失败: {str(e)}"

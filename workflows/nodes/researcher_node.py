@@ -1,6 +1,7 @@
 """研究节点 - 调用 ResearcherAgent 收集和整理研究资料"""
 
 import logging
+import time
 from typing import Optional
 
 from langchain_core.tools import BaseTool
@@ -62,9 +63,26 @@ async def researcher_node(state: WritingWorkflowState) -> dict:
         research_notes = response.metadata.get("research_notes", {"raw_content": response.content})
 
         logger.info("研究资料收集完成")
+        
+        current_thoughts = state.get("thoughts", [])
+        current_thoughts.append({
+            "node": "research",
+            "content": "正在进行资料检索和整理...",
+        })
+
+        stage_history = state.get("stage_history", [])
+        stage_history.append({
+            "stage": "researched",
+            "timestamp": time.time(),
+        })
+
         return {
             "research_notes": research_notes,
             "current_stage": "researched",
+            "thoughts": current_thoughts,
+            "current_thought": "研究资料收集完成",
+            "stage_history": stage_history,
+            "research_preview": response.content[:500] if len(response.content) > 500 else response.content,
             "error": "",
         }
 

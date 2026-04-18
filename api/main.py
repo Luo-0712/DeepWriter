@@ -1,25 +1,26 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+import logging
 
 from api.middlewares.cors import setup_cors
 from api.middlewares.error_handler import ErrorHandlerMiddleware
 from api.routers import sessions, messages, documents, tasks, knowledge, writing, sse
 from db.database import get_db
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    print("Starting DeepWriter API...")
+    logger.info("Starting DeepWriter API...")
     
-    # 初始化数据库表
-    print("Initializing database...")
+    logger.info("Initializing database...")
     db = get_db()
     db.init_tables()
-    print(f"Database initialized: {db.db_path}")
+    logger.info("Database initialized: %s", db.db_path)
     
     yield
-    print("Shutting down DeepWriter API...")
+    logger.info("Shutting down DeepWriter API...")
 
 
 app = FastAPI(

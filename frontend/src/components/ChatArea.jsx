@@ -4,31 +4,25 @@ import InputBox from './InputBox';
 import WelcomeScreen from './WelcomeScreen';
 import '../styles/global.css';
 
-const ChatArea = ({ messages, onSend, onSuggestionClick, isLoading, loadingMessages }) => {
+const ChatArea = ({ messages, onSend, onSuggestionClick, isLoading, loadingMessages, isSessionLoading }) => {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  if (loadingMessages) {
-    return (
-      <div className="chat-area">
-        <div className="messages-loading">
-          <div className="loading-spinner"></div>
-          <p>加载消息中...</p>
-        </div>
-        <InputBox onSend={onSend} disabled={true} />
-      </div>
-    );
-  }
-
   return (
     <div className="chat-area">
-      {messages.length === 0 ? (
+      {messages.length === 0 && !isSessionLoading ? (
         <WelcomeScreen onSuggestionClick={onSuggestionClick} />
       ) : (
         <div className="messages-container">
+          {isSessionLoading && messages.length === 0 && (
+            <div className="messages-loading">
+              <div className="loading-spinner"></div>
+              <p>加载消息中...</p>
+            </div>
+          )}
           {messages.map((message, index) => (
             <MessageBubble key={index} message={message} />
           ))}
@@ -53,7 +47,7 @@ const ChatArea = ({ messages, onSend, onSuggestionClick, isLoading, loadingMessa
           <div ref={messagesEndRef} />
         </div>
       )}
-      <InputBox onSend={onSend} disabled={isLoading} />
+      <InputBox onSend={onSend} disabled={isLoading || isSessionLoading} />
     </div>
   );
 };

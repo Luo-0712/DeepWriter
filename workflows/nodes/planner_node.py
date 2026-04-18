@@ -1,6 +1,7 @@
 """规划节点 - 调用 PlannerAgent 生成大纲"""
 
 import logging
+import time
 
 from workflows.state import WritingWorkflowState
 
@@ -34,9 +35,30 @@ async def planner_node(state: WritingWorkflowState) -> dict:
         outline = response.metadata.get("outline", {"raw_content": response.content})
 
         logger.info(f"大纲生成完成: {outline.get('title', 'untitled')}")
+        
+        current_thoughts = state.get("thoughts", [])
+        current_thoughts.append({
+            "node": "plan",
+            "content": "正在分析用户需求，规划文章结构...",
+        })
+
+        stage_history = state.get("stage_history", [])
+        stage_history.append({
+            "stage": "planned",
+            "timestamp": time.time(),
+        })
+
+        title = outline.get("title", "")
+        sections = outline.get("sections", [])
+        outline_preview = f"{title}\n" + "\n".join([f"- {s}" for s in sections]) if sections else title
+
         return {
             "outline": outline,
             "current_stage": "planned",
+            "thoughts": current_thoughts,
+            "current_thought": "大纲生成完成",
+            "stage_history": stage_history,
+            "outline_preview": outline_preview[:500] if len(outline_preview) > 500 else outline_preview,
             "error": "",
         }
 
