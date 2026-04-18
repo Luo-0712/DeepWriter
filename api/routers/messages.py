@@ -127,8 +127,15 @@ async def chat(
             detail=f"会话 {session_id} 不存在",
         )
 
+    # 检查是否是第一条消息
+    is_first_message = message_service.count_messages(session_id) == 0
+
     # 保存用户消息
     message_service.add_user_message(session_id, request.message)
+
+    # 如果是第一条消息，生成标题
+    if is_first_message:
+        await message_service.generate_title_for_first_message(session_id, request.message)
 
     # 调用 Agent 生成回复
     agent = WriterAgent()

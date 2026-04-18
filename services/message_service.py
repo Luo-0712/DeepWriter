@@ -61,6 +61,28 @@ class MessageService:
         """添加用户消息"""
         return self.create_message(session_id, "user", content, metadata)
 
+    async def generate_title_for_first_message(self, session_id: str, first_message: str) -> bool:
+        """为会话的第一条消息生成标题
+
+        Args:
+            session_id: 会话 ID
+            first_message: 第一条用户消息
+
+        Returns:
+            bool: 是否成功生成标题
+        """
+        try:
+            from agents.specialized.summarizer_agent import SummarizerAgent
+
+            summarizer = SummarizerAgent()
+            response = await summarizer.execute(first_message)
+
+            if response.success and response.content:
+                return self.session_repo.update_title(session_id, response.content)
+            return False
+        except Exception:
+            return False
+
     def add_assistant_message(self, session_id: str, content: str, metadata: Optional[dict] = None) -> MessageModel:
         """添加助手消息"""
         return self.create_message(session_id, "assistant", content, metadata)

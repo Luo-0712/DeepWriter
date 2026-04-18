@@ -4,12 +4,20 @@ from contextlib import asynccontextmanager
 from api.middlewares.cors import setup_cors
 from api.middlewares.error_handler import ErrorHandlerMiddleware
 from api.routers import sessions, messages, documents, tasks, knowledge, writing, sse
+from db.database import get_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     print("Starting DeepWriter API...")
+    
+    # 初始化数据库表
+    print("Initializing database...")
+    db = get_db()
+    db.init_tables()
+    print(f"Database initialized: {db.db_path}")
+    
     yield
     print("Shutting down DeepWriter API...")
 
